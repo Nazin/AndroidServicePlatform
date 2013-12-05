@@ -189,7 +189,7 @@ namespace PortableDevices
 
             System.Runtime.InteropServices.ComTypes.IStream sourceStream = (System.Runtime.InteropServices.ComTypes.IStream) wpdStream;
 
-            var filename = Path.GetFileName(file.Id);
+            var filename = Path.GetFileName(file.Name);
             FileStream targetStream = new FileStream(Path.Combine(saveToPath, filename), FileMode.Create, FileAccess.Write);
                 
             unsafe
@@ -331,12 +331,18 @@ namespace PortableDevices
             properties.GetValues(objectId, keys, out values);
 
             // Get the name of the object
-            string name;
-            var property = new _tagpropertykey();
-            property.fmtid = new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC,
-                                      0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
-            property.pid = 4;
-            values.GetStringValue(property, out name);
+			string name;
+			var property = new _tagpropertykey();
+			try {
+				property.fmtid = new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC, 0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+				property.pid = 12;
+				values.GetStringValue(property, out name);
+			} catch {
+				property = new _tagpropertykey();
+				property.fmtid = new Guid(0xEF6B490D, 0x5CD8, 0x437A, 0xAF, 0xFC, 0xDA, 0x8B, 0x60, 0xEE, 0x4A, 0x3C);
+				property.pid = 4;
+				values.GetStringValue(property, out name);
+			}
 
             // Get the type of the object
             Guid contentType;
