@@ -25,6 +25,11 @@ namespace ServicePlatform {
 			InitializeComponent();
 		}
 
+		private void disconnectWithDevice(object state) {
+			detected = false;
+			Console.WriteLine("Device connection lost?");
+		}
+
 		private void connectWithDevice(object state) {
 
 			if (detected)
@@ -40,7 +45,7 @@ namespace ServicePlatform {
 			var device = devices.First();
 			device.Connect();
 
-			Console.WriteLine("Connected to device");
+			Console.WriteLine("Connected to: " + device.FriendlyName);
 
 			var root = device.GetContents();
 			PortableDeviceFolder servicePlatformFolder = (PortableDeviceFolder)device.getServicePlatformFolder();
@@ -110,11 +115,50 @@ namespace ServicePlatform {
 			device.TransferContentToDevice(@Directory.GetCurrentDirectory() + "\\desktop-finished", servicePlatformFolder.Id);
 
 			Console.WriteLine("Starting processing...");
+
+			Boolean finished = false;
+
+			do {
+
+				System.Threading.Thread.Sleep(1000);
+				device.refreshFolderContents(servicePlatformFolder);
+
+				foreach (var item in servicePlatformFolder.Files) {
+					if (item is PortableDeviceFile && item.Name.Equals("mobile-finished")) {
+						Console.WriteLine("Processing finished!");
+						finished = true;
+					}
+				}
+			} while (!finished);
+
+			Console.WriteLine("Downloading output files...");
+
+			foreach (var item in servicePlatformFolder.Files) {
+				if (item is PortableDeviceFolder && item.Name.Equals("Output")) {
+					downloadFiles(device, (PortableDeviceFolder)item, outputFolder);
+				}
+			}
+
+			Console.WriteLine("Download finished!");
+			Console.WriteLine("Cleaning up ServicePlatform folder...");
+			cleanup(device, servicePlatformFolder);
+
+			Console.WriteLine("Disconnecting from device");
+			device.Disconnect();
+		}
+
+		private void downloadFiles(PortableDevice device, PortableDeviceFolder folder, String outputFolder) {
+			foreach (var item in folder.Files) {
+				if (item is PortableDeviceFile) {
+					Console.WriteLine("\tDownloading: " + item.Name);
+					device.DownloadFile((PortableDeviceFile)item, outputFolder);
+				}
+			}
 		}
 
 		private void cleanup(PortableDevice device, PortableDeviceFolder folder) {
 			foreach (var item in folder.Files) {
-				if (item is PortableDeviceFile && (item.Name.Equals("input-params") || item.Name.Equals("desktop-finished"))) {
+				if (item is PortableDeviceFile && (item.Name.Equals("input-params") || item.Name.Equals("desktop-finished") || item.Name.Equals("mobile-finished"))) {
 					device.DeleteFile((PortableDeviceFile)item);
 				} else if (item is PortableDeviceFolder && (item.Name.Equals("Input") || item.Name.Equals("Output"))) {
 					cleanupInDir(device, (PortableDeviceFolder)item);
@@ -128,6 +172,15 @@ namespace ServicePlatform {
 			}
 		}
 
+		public static void DisplayFolderContents(PortableDeviceFolder folder) {
+			foreach (var item in folder.Files) {
+				Console.WriteLine(item.Name);
+				if (item is PortableDeviceFolder) {
+					DisplayFolderContents((PortableDeviceFolder)item);
+				}
+			}
+		}
+
 		[System.Security.Permissions.PermissionSet(System.Security.Permissions.SecurityAction.Demand, Name = "FullTrust")]
 		protected override void WndProc(ref Message m) {
 
@@ -135,11 +188,19 @@ namespace ServicePlatform {
 
 			if (m.Msg == WM_DEVICECHANGE && m.WParam.ToInt32() == DBT_DEVNODES_CHANGED) {
 
-				if (timer != null) {
-					timer.Dispose();
+				if (!detected) {
+					if (timer != null) {
+						timer.Dispose();
+					}
+
+					timer = new System.Threading.Timer(connectWithDevice, null, 2000, System.Threading.Timeout.Infinite);
+				} else {
+					if (timer != null) {
+						timer.Dispose();
+					}
+
+					timer = new System.Threading.Timer(disconnectWithDevice, null, 2000, System.Threading.Timeout.Infinite);
 				}
-				
-				timer = new System.Threading.Timer(connectWithDevice, null, 1500, System.Threading.Timeout.Infinite);
 			}
 		}
 	}

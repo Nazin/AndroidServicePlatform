@@ -35,6 +35,19 @@ namespace PortableDevices
 
         public string DeviceId { get; set; }
 
+		[StructLayout(LayoutKind.Explicit, Size = 16)]
+		public struct PropVariant {
+			[FieldOffset(0)]
+			public short variantType;
+			[FieldOffset(8)]
+			public IntPtr pointerValue;
+			[FieldOffset(8)]
+			public byte byteValue;
+			[FieldOffset(8)]
+			public long longValue;
+		} 
+
+
         public string FriendlyName
         {
             get
@@ -54,17 +67,24 @@ namespace PortableDevices
                 IPortableDeviceValues propertyValues;
                 properties.GetValues("DEVICE", null, out propertyValues);
 
+				uint cPropValues = 0;
+				propertyValues.GetCount(ref cPropValues);
+
                 // Identify the property to retrieve
                 var property = new _tagpropertykey();
-                property.fmtid = new Guid(0x26D4979A, 0xE643, 0x4626, 0x9E, 0x2B,
-                                          0x73, 0x6D, 0xC0, 0xC9, 0x2F, 0xDC);
-                property.pid = 12;
+				var ipValue = new PortableDeviceApiLib.tag_inner_PROPVARIANT();
 
-                // Retrieve the friendly name
-                string propertyValue;
-                propertyValues.GetStringValue(ref property, out propertyValue);
+				propertyValues.GetAt(12, ref property, ref ipValue);
 
-                return propertyValue;
+				IntPtr ptrValue = Marshal.AllocHGlobal(Marshal.SizeOf(ipValue));
+				Marshal.StructureToPtr(ipValue, ptrValue, false);
+
+				//
+				// Marshal the pointer into our C# object
+				//
+				PropVariant pvValue = (PropVariant)Marshal.PtrToStructure(ptrValue, typeof(PropVariant));
+
+				return Marshal.PtrToStringUni(pvValue.pointerValue);
             }
         }
 
@@ -104,6 +124,13 @@ namespace PortableDevices
             EnumerateContents(ref content, root, 0);
             return root;
         }
+
+		public void refreshFolderContents(PortableDeviceFolder parent) {
+			IPortableDeviceContent content;
+			this._device.Content(out content);
+			parent.Files.Clear();
+			EnumerateContents(ref content, parent, -10);
+		}
 
 		public PortableDeviceObject getServicePlatformFolder() {
 			return ServicePlatformFolder;
@@ -172,10 +199,13 @@ namespace PortableDevices
                 do
                 {
                     sourceStream.Read(buffer, 1024, new IntPtr(&bytesRead));
-                    targetStream.Write(buffer, 0, 1024);
+					targetStream.Write(buffer, 0, bytesRead);
                 } while (bytesRead > 0);
-                targetStream.Close();                
+                targetStream.Close();  
             }
+
+			Marshal.ReleaseComObject(sourceStream);
+			Marshal.ReleaseComObject(wpdStream);
         }
 
         private static void StringToPropVariant(

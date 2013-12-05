@@ -19,7 +19,6 @@ import pl.edu.agh.mobile.serviceplatform.exceptions.VersionDoesNotMatch;
 public class MainService extends Service {
 
     private FileObserver observer;
-    private File mainDirectory;
     private Handler handler;
 
     static final String INPUT_PARAMS = "input-params";
@@ -43,7 +42,7 @@ public class MainService extends Service {
         boolean mExternalStorageWriteable = Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()), ready = false;
 
         if (mExternalStorageWriteable) {
-            mainDirectory = new File(path);
+            File mainDirectory = new File(path);
             ready = mainDirectory.exists();
             if (!mainDirectory.exists() && mainDirectory.mkdirs()) {
                 ready = true;
@@ -119,9 +118,7 @@ public class MainService extends Service {
                             sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(outputFile)));
                         }
                         service.postMessage("Processing completed!");
-                        //TODO save mobile-finished file in mainDirectory, refresh file
-                        //TODO removed input files, refresh input directory
-                        //TODO removed desktop-finished file and refresh
+                        mobileFinished();
                     } catch (InstantiationException e) {
                         service.postMessage("Unexpected error!");
                     } catch (IllegalAccessException e) {
@@ -132,6 +129,12 @@ public class MainService extends Service {
                         service.postMessage("Unexpected error!");
                     }
                 }
+            }
+
+            private void mobileFinished() throws IOException {
+                File f = new File(manager.getDirectory() + File.separator + "mobile-finished");
+                f.createNewFile();
+                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(f)));
             }
         };
     }
