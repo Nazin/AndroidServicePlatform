@@ -67,24 +67,16 @@ namespace PortableDevices
                 IPortableDeviceValues propertyValues;
                 properties.GetValues("DEVICE", null, out propertyValues);
 
-				uint cPropValues = 0;
-				propertyValues.GetCount(ref cPropValues);
-
-                // Identify the property to retrieve
                 var property = new _tagpropertykey();
-				var ipValue = new PortableDeviceApiLib.tag_inner_PROPVARIANT();
+                property = new _tagpropertykey();
+                property.fmtid = new Guid(0x26D4979A, 0xE643, 0x4626, 0x9E, 0x2B, 0x73, 0x6D, 0xC0, 0xC9, 0x2F, 0xDC);
+                property.pid = 8;
 
-				propertyValues.GetAt(12, ref property, ref ipValue);
+                // Retrieve the friendly name
+                string propertyValue;
+                propertyValues.GetStringValue(ref property, out propertyValue);
 
-				IntPtr ptrValue = Marshal.AllocHGlobal(Marshal.SizeOf(ipValue));
-				Marshal.StructureToPtr(ipValue, ptrValue, false);
-
-				//
-				// Marshal the pointer into our C# object
-				//
-				PropVariant pvValue = (PropVariant)Marshal.PtrToStructure(ptrValue, typeof(PropVariant));
-
-				return Marshal.PtrToStringUni(pvValue.pointerValue);
+                return propertyValue;
             }
         }
 
