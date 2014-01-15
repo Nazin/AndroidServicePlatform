@@ -34,4 +34,9 @@ public class GrayScaleService extends AbstractFactory {
         out.flush();
         out.close();
     }
+
+    @Override
+    public boolean isSecured() {
+        return true;
+    }
 }

@@ -23,7 +23,7 @@ namespace ServicePlatform {
 		private PortableDevice device;
 		private PortableDeviceFolder servicePlatformFolder;
 
-		private const String VERSION = "0.1.1";
+		private const String VERSION = "0.1.2";
 		private const int WM_DEVICECHANGE = 0x0219;
 		private const int DBT_DEVNODES_CHANGED = 0x0007;
 
@@ -34,6 +34,7 @@ namespace ServicePlatform {
 		private void MainForm_Load(object sender, EventArgs e) {
 			BeginInvoke(new MethodInvoker(delegate {
 				Hide();
+				//connectWithDevice(sender);
 			}));
 			openFileDialog1.Multiselect = true;
 		}

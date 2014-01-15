@@ -7,6 +7,10 @@ public abstract class AbstractFactory {
 
     public abstract void process(String inputFile, String outputFile) throws IOException;
 
+    public boolean isSecured() {
+        return false;
+    }
+
     public static AbstractFactory create(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 
         Class<?> temp = Class.forName(className);

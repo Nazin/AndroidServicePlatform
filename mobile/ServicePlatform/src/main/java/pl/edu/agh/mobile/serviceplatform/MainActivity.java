@@ -1,26 +1,33 @@
 package pl.edu.agh.mobile.serviceplatform;
 
 import android.app.Activity;
-import android.app.ActionBar;
 import android.app.ActivityManager;
 import android.app.Fragment;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.FileObserver;
-import android.util.Log;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Build;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
-import java.io.File;
-
 public class MainActivity extends Activity {
+
+    private final String securityCode = "123456";
+
+    private Messenger mService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,12 +43,44 @@ public class MainActivity extends Activity {
         startService();
     }
 
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            mService = new Messenger(service);
+        }
+
+        public void onServiceDisconnected(ComponentName className) {
+            mService = null;
+        }
+    };
+
+
     private void startService() {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo srv : manager.getRunningServices(Integer.MAX_VALUE)) {
             if ("pl.edu.agh.mobile.serviceplatform.MainService".equals(srv.service.getClassName())) return;
         }
-        startService(new Intent(MainActivity.this, MainService.class));
+        Intent intent = new Intent(MainActivity.this, MainService.class);
+        intent.putExtra("receiver", new MyResultReceiver(null));
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    public void validateSecurityCode(View view) {
+        EditText securityCodeText = (EditText)findViewById(R.id.securityCode);
+        if (securityCodeText.getText().toString().equals(securityCode)) {
+            findViewById(R.id.securityPanel).setVisibility(View.INVISIBLE);
+            securityCodeText.setText("");
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+            Toast.makeText(getApplicationContext(), "Security code valid!", Toast.LENGTH_SHORT).show();
+            try {
+                mService.send(Message.obtain(null, 1, 0, 0));
+            } catch (RemoteException e) {
+                Toast.makeText(getApplicationContext(), "Could not communicate with service!", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "Security code NOT valid!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -80,4 +119,29 @@ public class MainActivity extends Activity {
         }
     }
 
+    class ToggleSecurityPanel implements Runnable {
+
+        private boolean visible;
+
+        public ToggleSecurityPanel(boolean visible) {
+            this.visible = visible;
+        }
+
+        public void run() {
+            findViewById(R.id.securityPanel).setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+            ((EditText)findViewById(R.id.securityCode)).setText("");
+        }
+    }
+
+    class MyResultReceiver extends ResultReceiver {
+
+        public MyResultReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            runOnUiThread(new ToggleSecurityPanel(resultCode==1));
+        }
+    }
 }

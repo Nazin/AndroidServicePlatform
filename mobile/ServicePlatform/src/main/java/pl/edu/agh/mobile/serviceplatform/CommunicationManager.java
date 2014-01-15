@@ -12,12 +12,17 @@ import pl.edu.agh.mobile.serviceplatform.services.AbstractFactory;
 
 public class CommunicationManager {
 
+    private MainService service;
     private String directory;
     private String inputDirectory;
     private String outputDirectory;
     private String appVersion;
 
-    public CommunicationManager(String directory, String inputDirectory, String outputDirectory, String appVersion) {
+    private Input input;
+    private AbstractFactory processingService;
+
+    public CommunicationManager(MainService service, String directory, String inputDirectory, String outputDirectory, String appVersion) {
+        this.service = service;
         this.directory = directory;
         this.inputDirectory = inputDirectory;
         this.outputDirectory = outputDirectory;
@@ -54,13 +59,26 @@ public class CommunicationManager {
 
     public ArrayList<File> processInput(Input input) throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException {
 
-        AbstractFactory service = AbstractFactory.create("pl.edu.agh.mobile.serviceplatform.services." + input.getServiceName() + "Service");
+        processingService = AbstractFactory.create("pl.edu.agh.mobile.serviceplatform.services." + input.getServiceName() + "Service");
+        this.input = input;
+
+        if (processingService.isSecured()) {
+            service.getResultReceiver().send(1, null);
+            return null;
+        }
+
+        service.getResultReceiver().send(2, null);
+
+        return finishProcessing();
+    }
+
+    public ArrayList<File> finishProcessing() throws InstantiationException, IllegalAccessException, ClassNotFoundException, IOException {
 
         ArrayList<File> outputFiles = new ArrayList<File>();
 
         for (String inputFile : input.getFiles()) {
             String outputFile = inputFile.replace(inputDirectory, outputDirectory);
-            service.process(inputFile, outputFile);
+            processingService.process(inputFile, outputFile);
             outputFiles.add(new File(outputFile));
         }
 
