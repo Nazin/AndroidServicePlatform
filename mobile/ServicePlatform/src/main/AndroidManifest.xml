@@ -24,6 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".SettingsActivity" />
         
         <service android:name="pl.edu.agh.mobile.serviceplatform.MainService" android:enabled="true" />
     </application>

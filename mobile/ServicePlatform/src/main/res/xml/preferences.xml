@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="Service security"
+        android:key="service_security">
+
+        <pl.edu.agh.mobile.serviceplatform.SecurityCodePreference
+            android:password="true"
+            android:key="security_code"
+            android:title="Security code"
+            android:summary="Define the security code"
+            android:dialogTitle="Security code"
+            android:dialogMessage="Provide a security code" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

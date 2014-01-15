@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -14,6 +15,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,8 +26,6 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-
-    private final String securityCode = "123456";
 
     private Messenger mService;
 
@@ -66,8 +66,11 @@ public class MainActivity extends Activity {
     }
 
     public void validateSecurityCode(View view) {
+
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         EditText securityCodeText = (EditText)findViewById(R.id.securityCode);
-        if (securityCodeText.getText().toString().equals(securityCode)) {
+        if (securityCodeText.getText().toString().equals(sharedPrefs.getString("security_code", String.valueOf(R.string.default_security_code)))) {
             findViewById(R.id.securityPanel).setVisibility(View.INVISIBLE);
             securityCodeText.setText("");
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -93,12 +96,9 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             case R.id.action_settings:
-                return true;
+                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
         }
         return super.onOptionsItemSelected(item);
     }
