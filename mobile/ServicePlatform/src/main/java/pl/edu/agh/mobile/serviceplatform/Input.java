@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class Input {
 
-    private String version;
     private String serviceName;
     private ArrayList<String> files;
 
@@ -22,13 +21,5 @@ public class Input {
 
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
     }
 }

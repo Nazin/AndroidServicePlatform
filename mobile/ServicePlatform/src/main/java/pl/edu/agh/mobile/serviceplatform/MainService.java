@@ -12,6 +12,13 @@ import android.os.ResultReceiver;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.StringTokenizer;
+
+import dalvik.system.DexFile;
 
 public class MainService extends Service {
 
@@ -69,9 +76,54 @@ public class MainService extends Service {
         if (!ready) {
             Toast.makeText(getApplicationContext(), "Cannot access ServicePlatform directory", Toast.LENGTH_LONG).show();
         } else {
-            observer = initSingleDirectoryObserver(new CommunicationManager(this, path, inputPath, outputPath, getResources().getString(R.string.app_versionName)));
+            observer = initSingleDirectoryObserver(new CommunicationManager(this, path, inputPath, outputPath));
             observer.startWatching();
             Toast.makeText(getApplicationContext(), "Observer started", Toast.LENGTH_LONG).show();
+            updateServices(path);
+        }
+    }
+
+    private void updateServices(String path) {
+
+        try {
+
+            ArrayList<String> servicesNames = new ArrayList<String>();
+            DexFile df = new DexFile(getPackageCodePath());
+
+            for (Enumeration<String> itrs = df.entries(); itrs.hasMoreElements();) {
+
+                String s = itrs.nextElement();
+                StringTokenizer tokens = new StringTokenizer(s, ".");
+                String packageName = tokens.nextToken();
+
+                for (int i=0, l = tokens.countTokens(); i<l-1; i++) {
+                    packageName = packageName.concat(".").concat(tokens.nextToken());
+                }
+
+                String className = tokens.nextToken();
+
+                if (packageName.equals("pl.edu.agh.mobile.serviceplatform.services") && !className.equals("AbstractFactory")) {
+                    servicesNames.add(className.substring(0, className.length() - 7));
+                }
+            }
+
+            String servicesFile = path + File.separator + "services";
+
+            File f = new File(servicesFile);
+            if (!f.exists()) {
+                f.createNewFile();
+            }
+
+            FileWriter fw = new FileWriter(servicesFile, false);
+
+            for (String serviceName : servicesNames) {
+                fw.write(serviceName + "\n");
+            }
+
+            fw.close();
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(f)));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

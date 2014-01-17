@@ -23,7 +23,8 @@ namespace ServicePlatform {
 		private PortableDevice device;
 		private PortableDeviceFolder servicePlatformFolder;
 
-		private const String VERSION = "0.1.2";
+		private Boolean servicesFileDetected = false;
+
 		private const int WM_DEVICECHANGE = 0x0219;
 		private const int DBT_DEVNODES_CHANGED = 0x0007;
 
@@ -70,6 +71,14 @@ namespace ServicePlatform {
 				return;
 			}
 
+			getServicesList(device, servicePlatformFolder);
+
+			if (!servicesFileDetected) {
+				Console.WriteLine("Could not detect services! Disconnecting...");
+				device.Disconnect();
+				return;
+			}
+
 			BeginInvoke(new MethodInvoker(delegate {
 				Show();
 				//MessageBox.Show("Connected to: " + device.FriendlyName);
@@ -78,6 +87,26 @@ namespace ServicePlatform {
 			cleanup(device, servicePlatformFolder);
 
 			//device.Disconnect();
+		}
+
+		private void getServicesList(PortableDevice device, PortableDeviceFolder folder) {
+			foreach (var item in folder.Files) {
+				if (item is PortableDeviceFile && item.Name.Equals("services")) {
+					device.DownloadFile((PortableDeviceFile)item, ".");
+					servicesFileDetected = true;
+					break;
+				}
+			}
+			if (File.Exists("services")) {
+				BeginInvoke(new MethodInvoker(delegate {
+					System.IO.StreamReader file = new System.IO.StreamReader("services");
+					String line;
+					while ((line = file.ReadLine()) != null) {
+						services.Items.Add(line);
+					}
+					file.Close();
+				}));
+			}
 		}
 
 		private void downloadFiles(PortableDevice device, PortableDeviceFolder folder, String outputFolder) {
@@ -200,7 +229,6 @@ namespace ServicePlatform {
 				fs.Close();
 			}
 			using (StreamWriter sw = new StreamWriter(File.Open("input-params", System.IO.FileMode.Truncate))) {
-				sw.WriteLine(VERSION);
 				sw.WriteLine(serviceName);
 				foreach (String file in files) {
 					String[] parts = file.Split('\\');

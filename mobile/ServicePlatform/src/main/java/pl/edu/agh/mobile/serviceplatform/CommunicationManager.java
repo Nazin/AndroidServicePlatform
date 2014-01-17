@@ -16,17 +16,15 @@ public class CommunicationManager {
     private String directory;
     private String inputDirectory;
     private String outputDirectory;
-    private String appVersion;
 
     private Input input;
     private AbstractFactory processingService;
 
-    public CommunicationManager(MainService service, String directory, String inputDirectory, String outputDirectory, String appVersion) {
+    public CommunicationManager(MainService service, String directory, String inputDirectory, String outputDirectory) {
         this.service = service;
         this.directory = directory;
         this.inputDirectory = inputDirectory;
         this.outputDirectory = outputDirectory;
-        this.appVersion = appVersion;
     }
 
     public Input readInputFile(String filename) throws IOException, VersionDoesNotMatch, NoFiles {
@@ -34,7 +32,6 @@ public class CommunicationManager {
         Input input = new Input();
         BufferedReader br = new BufferedReader(new FileReader(directory + File.separator + filename));
 
-        input.setVersion(br.readLine());
         input.setServiceName(br.readLine());
 
         String line;
@@ -45,10 +42,6 @@ public class CommunicationManager {
         br.close();
 
         input.setFiles(files);
-
-        if (!input.getVersion().equals(appVersion)) {
-            throw new VersionDoesNotMatch("Desktop version: " + input.getVersion() + ", mobile version: " + appVersion);
-        }
 
         if (input.getFiles().isEmpty()) {
             throw new NoFiles();

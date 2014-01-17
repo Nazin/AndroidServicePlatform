@@ -62,9 +62,6 @@
 			// 
 			this.services.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.services.FormattingEnabled = true;
-			this.services.Items.AddRange(new object[] {
-            "UpperCase",
-            "GrayScale"});
 			this.services.Location = new System.Drawing.Point(130, 3);
 			this.services.Name = "services";
 			this.services.Size = new System.Drawing.Size(121, 21);
